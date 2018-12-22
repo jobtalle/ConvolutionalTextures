@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of life</title>
+    <script src="myr.js"></script>
+    <script src="convTex.js"></script>
+</head>
+<body>
+    <canvas id="renderer" width=1200 height=800></canvas>
+    <script>
+        const canvas = document.getElementById("renderer");
+        const rect = canvas.getBoundingClientRect();
+        const mousePrevious = new Myr.Vector(0, 0);
+        const mouseCurrent = new Myr.Vector(0, 0);
+        const myr = new Myr(canvas);
+        const texture = new ConvTex(
+            myr,
+            new myr.Shader(
+                "int neighbors = 0;" +
+                "int live = 0;" +
+                "if (texture(source, uv).r == 1.0) live = 1;" +
+                "if (texture(source, uv + pixelSize * vec2(-1, -1)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(0, -1)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(1, -1)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(-1, 1)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(0, 1)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(1, 1)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(-1, 0)).r == 1.0) ++neighbors;" +
+                "if (texture(source, uv + pixelSize * vec2(1, 0)).r == 1.0) ++neighbors;" +
+                "if (live == 1 && neighbors < 2)" +
+                    "color = vec4(0, 0, 0, 1);" +
+                "else if (live == 1 && (neighbors == 2 || neighbors == 3))" +
+                    "color = vec4(1, 1, 1, 1);" +
+                "else if (live == 1 && neighbors == 3)" +
+                    "color = vec4(0, 0, 0, 1);" +
+                "else if (live == 0 && neighbors == 3)" +
+                    "color = vec4(1, 1, 1, 1);",
+                ["source"],
+                []
+            ),
+            myr.getWidth(),
+            myr.getHeight());
+
+        let brushDown = false;
+
+        myr.setClearColor(new Myr.Color(0.1, 0.3, 0.6));
+
+        myr.utils.loop(function(timeStep) {
+            texture.update();
+
+            myr.bind();
+            myr.clear();
+
+            texture.getFront().draw(0, 0);
+
+            myr.flush();
+
+            return true;
+        });
+
+        canvas.addEventListener("mousedown", event => {
+            brushDown = true;
+        });
+
+        canvas.addEventListener("mouseup", () => {
+            brushDown = false;
+        });
+
+        canvas.addEventListener("mousemove", event => {
+            mousePrevious.x = mouseCurrent.x;
+            mousePrevious.y = mouseCurrent.y;
+            mouseCurrent.x = event.clientX - rect.left;
+            mouseCurrent.y = event.clientY - rect.top;
+
+            if (brushDown && !mousePrevious.equals(mouseCurrent)) {
+                texture.getFront().bind();
+                
+                myr.primitives.drawLine(
+                    Myr.Color.WHITE,
+                    mousePrevious.x,
+                    mousePrevious.y,
+                    mouseCurrent.x,
+                    mouseCurrent.y
+                );
+            }
+        });
+    </script>
+</body>
+</html>
