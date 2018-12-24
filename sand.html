@@ -14,6 +14,8 @@
         const mouseCurrent = new Myr.Vector(0, 0);
         const myr = new Myr(canvas);
         const hueStep = 0.211;
+        const brushRadius = 16;
+        const brushSpacing = 6;
         const texture = new ConvTex(
             myr,
             new myr.Shader(
@@ -23,32 +25,24 @@
                         "return vec4(1);" +
                     "else if (location.y < 0.0)" +
                         "return vec4(0);" +
+
                     "return texture(source, location);" +
-                "}" +
-
-                "bool canSlideDown(int x, int y) {" +
-                    "return get(x, y).a == 1.0 && get(x, y + 1).a == 0.0;" +
-                "}" +
-
-                "bool canSlideRight(int x, int y) {" +
-                    "return get(x, y).a == 1.0 && get(x + 1, y + 1).a == 0.0 && get(x - 1, y + 1).a != 0.0 && !canSlideDown(x, y) && !canSlideDown(x + 1, y);" +
-                "}" +
-
-                "bool canSlideLeft(int x, int y) {" +
-                    "return get(x, y).a == 1.0 && get(x - 1, y + 1).a == 0.0 && get(x + 1, y + 1).a != 0.0 && !canSlideDown(x, y) && !canSlideDown(x - 1, y) && !canSlideRight(x - 2, y);" +
                 "}" +
 
                 "void main() {" +
                     "color = get(0, 0);" +
 
                     "if (color.a == 0.0) {" +
-                        "if (canSlideDown(0, -1))" +
+                        "if (get(0, -1).a == 1.0)" +
                             "color = get(0, -1);" +
-                        "else if (canSlideLeft(1, -1))" +
+                        "else if (get(1, -1).a == 1.0 && get(2, 0).a == 1.0 && get(1, 0).a == 1.0 && !(get(-1, -1).a == 1.0 && get(-2, 0).a == 1.0 && get(-1, 0).a == 1.0))" +
                             "color = get(1, -1);" +
-                        "else if (canSlideRight(-1, -1))" +
+                        "else if (get(-1, -1).a == 1.0 && get(-2, 0).a == 1.0 && get(-1, 0).a == 1.0)" +
                             "color = get(-1, -1);" +
-                    "} else if (canSlideDown(0, 0) || canSlideLeft(0, 0) || canSlideRight(0, 0))" +
+                    "} else if (" +
+                        "get(0, 1).a == 0.0 || (" +
+                        "(get(-1, 1).a == 0.0 && get(1, 1).a == 1.0 && get(-1, 0).a == 0.0 && !(get(-2, 0).a == 1.0 && get(-3, 1).a == 1.0 && get(-2, 1).a == 1.0)) ||" +
+                        "(get(1, 1).a == 0.0 && get(-1, 1).a == 1.0 && get(1, 0).a == 0.0)))" +
                         "color = vec4(0);" +
                 "}",
                 ["source"],
@@ -80,15 +74,7 @@
         canvas.addEventListener("mousedown", event => {
             brushDown = true;
             hue = (hue + hueStep) % 1;
-            brushColor = Myr.Color.fromHSV(hue, 0.9, 0.6);
-
-            texture.getFront().bind();
-
-            myr.primitives.fillCircle(
-                brushColor,
-                mouseCurrent.x,
-                mouseCurrent.y,
-                40);
+            brushColor = Myr.Color.fromHSV(hue, 0.7, 0.7);
         });
 
         canvas.addEventListener("mouseup", () => {
@@ -104,15 +90,17 @@
             if (brushDown && !mousePrevious.equals(mouseCurrent)) {
                 const dx = mouseCurrent.x - mousePrevious.x;
                 const dy = mouseCurrent.y - mousePrevious.y;
+                const dl = Math.sqrt(dx * dx + dy * dy);
 
                 texture.getFront().bind();
-/*
-                myr.primitives.fillCircle(
-                    brushColor,
-                    mouseCurrent.x,
-                    mouseCurrent.y,
-                    Math.min(16, Math.sqrt(dx * dx + dy * dy))
-                );*/
+
+                for (let d = 0; d < dl; d += brushSpacing)
+                    myr.primitives.fillCircle(
+                        brushColor,
+                        mousePrevious.x + (dx / dl) * d,
+                        mousePrevious.y + (dy / dl) * d,
+                        brushRadius
+                    );
             }
         });
     </script>
