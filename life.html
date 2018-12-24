@@ -16,25 +16,30 @@
         const texture = new ConvTex(
             myr,
             new myr.Shader(
-                "int neighbors = 0;" +
-                "int live = 0;" +
-                "if (texture(source, uv).r == 1.0) live = 1;" +
-                "if (texture(source, uv + pixelSize * vec2(-1, -1)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(0, -1)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(1, -1)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(-1, 1)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(0, 1)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(1, 1)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(-1, 0)).r == 1.0) ++neighbors;" +
-                "if (texture(source, uv + pixelSize * vec2(1, 0)).r == 1.0) ++neighbors;" +
-                "if (live == 1 && neighbors < 2)" +
-                    "color = vec4(0, 0, 0, 1);" +
-                "else if (live == 1 && (neighbors == 2 || neighbors == 3))" +
-                    "color = vec4(1, 1, 1, 1);" +
-                "else if (live == 1 && neighbors == 3)" +
-                    "color = vec4(0, 0, 0, 1);" +
-                "else if (live == 0 && neighbors == 3)" +
-                    "color = vec4(1, 1, 1, 1);",
+                "int get(int dx, int dy) {" +
+                    "return int(texture(source, uv + pixelSize * vec2(dx, dy)).r);" +
+                "}" +
+
+                "void main() {" +
+                    "int live = get(0, 0);" +
+                    "int neighbors =" +
+                        "get(-1, -1) +" +
+                        "get(0, -1) +" +
+                        "get(1, -1) +" +
+                        "get(-1, 0) +" +
+                        "get(1, 0) +" +
+                        "get(-1, 1) +" +
+                        "get(0, 1) +" +
+                        "get(1, 1);" +
+                    "if (live == 1 && neighbors < 2)" +
+                        "color = vec4(0, 0, 0, 1);" +
+                    "else if (live == 1 && (neighbors == 2 || neighbors == 3))" +
+                        "color = vec4(1, 1, 1, 1);" +
+                    "else if (live == 1 && neighbors == 3)" +
+                        "color = vec4(0, 0, 0, 1);" +
+                    "else if (live == 0 && neighbors == 3)" +
+                        "color = vec4(1, 1, 1, 1);" +
+                "}",
                 ["source"],
                 []
             ),
