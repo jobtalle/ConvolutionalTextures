@@ -433,8 +433,8 @@ const Myr = function(canvasElement) {
         };
 
         this._prepareDraw = () => {
-            bindTextures();
             prepareDraw(RENDER_MODE_SHADER, 12, _shader);
+            bindTextures();
 
             _instanceBuffer[++_instanceBufferAt] = 0;
             _instanceBuffer[++_instanceBufferAt] = 0;
