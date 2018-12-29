@@ -1,7 +1,7 @@
-const ConvTex = function(myr, shader, width, height) {
+const ConvTex = function(myr, shader, width, height, quality) {
     const _surfaces = [
-        new myr.Surface(width, height),
-        new myr.Surface(width, height)
+        new myr.Surface(width, height, quality),
+        new myr.Surface(width, height, quality)
     ];
 
     let _front = 0;

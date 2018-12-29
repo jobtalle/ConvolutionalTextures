@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Displacement</title>
+    <title>Grass</title>
     <script src="myr.js"></script>
     <script src="convTex.js"></script>
 </head>
@@ -9,8 +9,11 @@
     <canvas id="renderer" width=1200 height=800></canvas>
     <script>
         const gridSize = 32;
-        const brushRadius = 180;
+        const brushRadius = 150;
         const brushSpacing = 6;
+        const grassHeight = 70;
+        const grassSpacing = 15;
+        const grassLayers = [];
         const canvas = document.getElementById("renderer");
         const rect = canvas.getBoundingClientRect();
         const mousePrevious = new Myr.Vector(0, 0);
@@ -53,13 +56,53 @@
             []
         );
 
+        const grassShader = new myr.Shader(
+            "void main() {" +
+                "lowp vec2 delta = texture(displacement, vec2(uv.x, base)).xy;" +
+                "lowp vec2 uvOffset = (1.0 - uv.y) * (delta - vec2(0.5));" +
+                "color = texture(source, uv - uvOffset * pixelSize * 100.0) * (1.0 - uvOffset.y);" +
+            "}",
+            ["source", "displacement"],
+            ["base"]
+        );
+
+        const GrassLayer = function(height, base) {
+            const _surface = new myr.Surface(myr.getWidth(), height);
+            
+            const fill = () => {
+                const bladeWidth = 10;
+                const bladeSpacing = 3;
+                const bladeColor = new Myr.Color(0.36, 0.68, 0.33);
+
+                _surface.bind();
+                
+                for (let x = -Math.floor(Math.random() * bladeWidth); x < _surface.getWidth(); x += bladeWidth + Math.floor(Math.random() * bladeSpacing))
+                    myr.primitives.drawTriangleGradient(
+                        Myr.Color.BLACK,
+                        x, height,
+                        Myr.Color.BLACK,
+                        x + bladeWidth, height,
+                        bladeColor,
+                        x + bladeWidth * 0.5, Math.floor(Math.random() * height * 0.3)
+                    );
+            };
+            let uvy = base / myr.getHeight();
+            this.draw = () => {
+                grassShader.setVariable("base", uvy);
+                grassShader.setSurface("source", _surface);
+                grassShader.draw(0, base - height);
+            };
+
+            fill();
+        };
+
         let brushDown = false;
         let brushed = false;
 
         applicationShader.setSurface("source", application);
+        displacementShader.setSurface("source", image);
 
         // Initialize convtex
-        displacementShader.setSurface("source", image);
         texture.setClearColor(new Myr.Color(0.5, 0.5, 0.5, 0.5));
         texture.getFront().bind();
         texture.getFront().clear();
@@ -84,7 +127,14 @@
             }
         }
 
-        myr.setClearColor(Myr.Color.WHITE);
+        // Initialize grass
+        for (let y = grassSpacing; y < myr.getHeight() + grassHeight; y += grassSpacing) {
+            const layer = new GrassLayer(grassHeight, y);
+
+            grassLayers.push(layer);
+        }
+
+        myr.setClearColor(Myr.Color.BLACK);
 
         myr.utils.loop(function(timeStep) {
             if (brushed) {
@@ -101,8 +151,13 @@
             myr.bind();
             myr.clear();
 
-            displacementShader.setSurface("displacement", texture.getFront());
-            displacementShader.draw(0, 0);
+            //displacementShader.setSurface("displacement", texture.getFront());
+            //displacementShader.draw(0, 0);
+
+            grassShader.setSurface("displacement", texture.getFront());
+
+            for (const layer of grassLayers)
+                layer.draw();
 
             texture.getFront().drawScaled(0, 0, 0.2, 0.2);
 

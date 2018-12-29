@@ -132,12 +132,32 @@ const Myr = function(canvasElement) {
         _gl.texParameteri(_gl.TEXTURE_2D, _gl.TEXTURE_WRAP_S, _gl.CLAMP_TO_EDGE);
         _gl.texParameteri(_gl.TEXTURE_2D, _gl.TEXTURE_WRAP_T, _gl.CLAMP_TO_EDGE);
 
-        if(arguments.length === 2) {
+        if(typeof arguments[0] === "number") {
             _width = arguments[0];
             _height = arguments[1];
             _ready = true;
             
-            _gl.texImage2D(_gl.TEXTURE_2D, 0, _gl.RGBA32F, _width, _height, 0, _gl.RGBA, _gl.FLOAT, new Float32Array(_width * _height << 2));
+            switch (arguments[2]) {
+                default:
+                case 0:
+                    _gl.texImage2D(
+                        _gl.TEXTURE_2D, 0, _gl.RGBA, _width, _height, 0, _gl.RGBA, _gl.UNSIGNED_BYTE,
+                        new Uint8Array(_width * _height << 2));
+
+                    break;
+                case 1:
+                    _gl.texImage2D(
+                        _gl.TEXTURE_2D, 0, _gl.RGBA16F, _width, _height, 0, _gl.RGBA, _gl.FLOAT,
+                        new Float32Array(_width * _height << 2));
+
+                    break;
+                case 2:
+                    _gl.texImage2D(
+                        _gl.TEXTURE_2D, 0, _gl.RGBA32F, _width, _height, 0, _gl.RGBA, _gl.FLOAT,
+                        new Float32Array(_width * _height << 2));
+
+                    break;
+            }
         }
         else {
             const image = new Image();
@@ -716,30 +736,33 @@ const Myr = function(canvasElement) {
         _gl.deleteShader(_shaderFragment);
     };
 
-    const Shader = function(core, samplers) {
+    const Shader = function(core, uniforms) {
         this.bind = () => {
-            if(_currentShader === this)
+            if(_currentShader === this) {
+                for (const uniformCall of _uniformCalls)
+                    uniformCall[0](uniformCall[1], uniformCall[2].value);
+
                 return;
+            }
 
             _currentShader = this;
 
             core.bind();
-
-            for(let i = 0; i < _samplerCalls.length; ++i)
-                _samplerCalls[i][0](_samplerCalls[i][1], _samplerCalls[i][2].value);
+            
+            for (const uniformCall of _uniformCalls)
+                uniformCall[0](uniformCall[1], uniformCall[2].value);
         };
 
-        this.setUniform = (name, value) => samplers[name].value = value;
+        this.setUniform = (name, value) => uniforms[name].value = value;
         this.free = () => core.free();
 
-        const _samplerCalls = [];
-        const _samplerNames = Object.keys(samplers);
-
-        for(let i = 0; i < _samplerNames.length; ++i)
-            _samplerCalls.push([
-                _gl["uniform" + samplers[_samplerNames[i]].type].bind(_gl),
-                _gl.getUniformLocation(core.getProgram(), _samplerNames[i]),
-                samplers[_samplerNames[i]]
+        const _uniformCalls = [];
+        
+        for (const uniform of Object.keys(uniforms))
+            _uniformCalls.push([
+                _gl["uniform" + uniforms[uniform].type].bind(_gl),
+                _gl.getUniformLocation(core.getProgram(), uniform),
+                uniforms[uniform]
             ]);
     };
 
