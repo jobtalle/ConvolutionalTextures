@@ -44,9 +44,9 @@
 
         const applicationShader = new myr.Shader(
             "void main() {" +
-                "lowp vec4 sourcePixel = texture(source, uv);" +
+                "lowp vec4 sourcePixel = texture(source, uv) * colorFilter;" +
                 "lowp vec4 targetPixel = texture(target, uv);" +
-                "color = vec4(targetPixel.rg + (sourcePixel.rg - vec2(0.5)) * sourcePixel.a * 0.1, targetPixel.ba);" +
+                "color = vec4(targetPixel.rg + (sourcePixel.rg - vec2(0.5)) * sourcePixel.a, targetPixel.ba);" +
             "}",
             ["target", "source"],
             []
@@ -58,7 +58,7 @@
                 "lowp vec2 uvOffset = (1.0 - uv.y) * (delta - vec2(0.5));" +
                 "lowp float lighting = 1.0 - uvOffset.y;" +
                 "uvOffset.y += length(uvOffset) * 0.5;" +
-                "color = texture(source, uv - uvOffset * pixelSize * 200.0) * lighting;" +
+                "color = texture(source, uv - uvOffset * pixelSize * 128.0) * lighting;" +
             "}",
             ["source", "displacement"],
             ["base"]
@@ -93,7 +93,6 @@
             fill();
         };
 
-        let brushDown = false;
         let brushed = false;
 
         applicationShader.setSurface("source", application);
@@ -119,7 +118,7 @@
                 0.5 + 0.5 * Math.cos(direction),
                 0.5 + 0.5 * Math.sin(direction),
                 0,
-                1 - length / brushRadius
+                Math.min(1 - length / brushRadius, length / brushRadius)
             ), x, y);
             myr.blendEnable();
         }
@@ -172,59 +171,31 @@
             return true;
         });
 
-        canvas.addEventListener("mousedown", event => {
-            mouseCurrent.x = event.clientX - rect.left;
-            mouseCurrent.y = event.clientY - rect.top;
-            brushDown = true;
-
-            brushed = true;
-            application.bind();
-            application.clear();
-            myr.blendDisable();
-            applyPush.draw(mouseCurrent.x - brushRadius, mouseCurrent.y - brushRadius);
-            myr.blendEnable();
-        });
-
-        canvas.addEventListener("mouseup", () => {
-            brushDown = false;
-        });
-
         canvas.addEventListener("mousemove", event => {
             mousePrevious.x = mouseCurrent.x;
             mousePrevious.y = mouseCurrent.y;
             mouseCurrent.x = event.clientX - rect.left;
             mouseCurrent.y = event.clientY - rect.top;
 
-            if (brushDown && !mousePrevious.equals(mouseCurrent)) {
+            if (!mousePrevious.equals(mouseCurrent)) {
                 const dx = mouseCurrent.x - mousePrevious.x;
                 const dy = mouseCurrent.y - mousePrevious.y;
                 const dl = Math.sqrt(dx * dx + dy * dy);
-                const direction = Math.atan2(dy, dx);
-                const brushColorCenter = new Myr.Color(
-                    0.5 + 0.5 * Math.cos(direction),
-                    0.5 + 0.5 * Math.sin(direction),
-                    0, Math.min(1, dl / 80));
-                const brushColorRim = new Myr.Color(0.5, 0.5, 0, 0);
 
                 application.bind();
                 application.clear();
+                myr.blendDisable();
+                myr.setAlpha(Math.min(1, dl / 80));
 
                 for (let d = 0; d < dl; d += brushSpacing)
                     applyPush.draw(
                         mousePrevious.x + (dx / dl) * d - brushRadius,
                         mousePrevious.y + (dy / dl) * d - brushRadius,
                     );
-                /*
-                    myr.primitives.fillCircleGradient(
-                        brushColorCenter,
-                        brushColorRim,
-                        mousePrevious.x + (dx / dl) * d,
-                        mousePrevious.y + (dy / dl) * d,
-                        brushRadius
-                    );
-                */
 
-                
+                myr.setAlpha(1);
+                myr.blendEnable();
+
                 brushed = true;
             }
         });
