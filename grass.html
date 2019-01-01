@@ -32,7 +32,7 @@
                     "lowp vec4 pixel = texture(source, uv);" +
                     "color = clamp(vec4(" +
                         "pixel.rg + (pixel.ba - vec2(0.5)) * 0.1," +
-                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.15) * 0.93), 0.0, 1.0);" +
+                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.15) * 0.95), 0.0, 1.0);" +
                 "}",
                 ["source"],
                 []
@@ -55,8 +55,8 @@
             "void main() {" +
                 "lowp vec2 delta = texture(displacement, vec2(uv.x, base)).xy;" +
                 "lowp vec2 uvOffset = (1.0 - uv.y) * (delta - vec2(0.5));" +
-                "lowp float lighting = 1.0 - uvOffset.y;" +
-                "uvOffset.y += length(uvOffset) * 2.0 * (1.0 - uv.y);" +
+                "lowp float lighting = 1.0 - uvOffset.y * 2.0;" +
+                "uvOffset.y += length(uvOffset) * 3.0 * (1.0 - uv.y);" +
                 "color = texture(source, uv - uvOffset * pixelSize * 180.0) * lighting;" +
             "}",
             ["source", "displacement"],

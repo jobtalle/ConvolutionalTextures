@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Water</title>
+    <script src="myr.js"></script>
+    <script src="convTex.js"></script>
+</head>
+<body>
+    <canvas id="renderer" width=1200 height=800></canvas>
+    <script>
+        const gridSize = 32;
+        const brushRadius = 2;
+        const canvas = document.getElementById("renderer");
+        const rect = canvas.getBoundingClientRect();
+        const mousePrevious = new Myr.Vector(0, 0);
+        const mouseCurrent = new Myr.Vector(0, 0);
+        const myr = new Myr(canvas);
+        const image = new myr.Surface(myr.getWidth(), myr.getHeight());
+        const application = new myr.Surface(myr.getWidth(), myr.getHeight());
+        const texture = new ConvTex(
+            myr,
+            new myr.Shader(
+                "void main() {" +
+                    "lowp float damping = 0.999;" +
+                    "lowp vec4 pixel = texture(source, uv);" +
+                    "lowp vec4 pixelLeft = texture(source, vec2(uv.x - pixelSize.x, uv.y));" +
+                    "lowp vec4 pixelUp = texture(source, vec2(uv.x, uv.y - pixelSize.y));" +
+                    "lowp vec4 pixelRight = texture(source, vec2(uv.x + pixelSize.x, uv.y));" +
+                    "lowp vec4 pixelDown = texture(source, vec2(uv.x, uv.y + pixelSize.y));" +
+                    "color = vec4(((pixelLeft.r + pixelUp.r + pixelRight.r + pixelDown.r) / 2.0 - pixel.g) * damping, pixel.r, 0, 1);" +
+                "}",
+                ["source"],
+                []
+            ),
+            myr.getWidth(),
+            myr.getHeight(),
+            2);
+        
+        const displacementShader = new myr.Shader(
+            "void main() {" +
+                "lowp float height = min(texture(displacement, uv).r, 1.0);" +
+                "color = vec4(texture(displacement, uv).r, texture(displacement, uv).g, 1.0, 1.0);" +
+            "}",
+            ["source", "displacement"],
+            []
+        );
+
+        const applicationShader = new myr.Shader(
+            "void main() {" +
+                "lowp vec4 sourcePixel = texture(source, uv);" +
+                "lowp vec4 targetPixel = texture(target, uv);" +
+                "color = vec4(targetPixel.r + sourcePixel.r * sourcePixel.a, targetPixel.gba);" +
+            "}",
+            ["target", "source"],
+            []
+        );
+
+        let brushDown = false;
+        let brushed = false;
+
+        applicationShader.setSurface("source", application);
+
+        // Initialize convtex
+        displacementShader.setSurface("source", image);
+        texture.setClearColor(new Myr.Color(0, 0, 0, 1));
+        texture.getFront().bind();
+        texture.getFront().clear();
+
+        // Initialize image
+        image.bind();
+        image.clear();
+
+        for (let y = 0; y < image.getHeight(); y += gridSize << 1) {
+            for (let x = 0; x < image.getWidth(); x += gridSize << 1) {
+                myr.primitives.fillRectangle(
+                    new Myr.Color(0.7, 0.7, 1, 1),
+                    x, y,
+                    gridSize, gridSize
+                );
+
+                myr.primitives.fillRectangle(
+                    new Myr.Color(0.7, 0.7, 1, 1),
+                    x + gridSize, y + gridSize,
+                    gridSize, gridSize
+                );
+            }
+        }
+
+        myr.setClearColor(Myr.Color.WHITE);
+
+        myr.utils.loop(function(timeStep) {
+            if (brushed) {
+                texture.apply(applicationShader);
+
+                application.bind();
+                application.clear();
+            }
+
+            brushed = false;
+            
+            texture.update();
+
+            myr.bind();
+            myr.clear();
+
+            displacementShader.setSurface("displacement", texture.getFront());
+            displacementShader.draw(0, 0);
+
+            //texture.getFront().drawScaled(0, 0, 0.2, 0.2);
+
+            myr.primitives.drawCircle(
+                Myr.Color.BLUE,
+                mouseCurrent.x,
+                mouseCurrent.y,
+                brushRadius
+            );
+
+            myr.flush();
+
+            return true;
+        });
+
+        canvas.addEventListener("mousedown", event => {
+            mouseCurrent.x = event.clientX - rect.left;
+            mouseCurrent.y = event.clientY - rect.top;
+            brushDown = true;
+            
+            application.bind();
+            application.clear();
+            myr.blendDisable();
+
+            myr.primitives.fillCircle(new Myr.Color(1, 0, 0, 1), mouseCurrent.x, mouseCurrent.y, brushRadius);
+
+            myr.blendEnable();
+
+            brushed = true;
+        });
+
+        canvas.addEventListener("mouseup", () => {
+            brushDown = false;
+        });
+
+        canvas.addEventListener("mousemove", event => {
+            mousePrevious.x = mouseCurrent.x;
+            mousePrevious.y = mouseCurrent.y;
+            mouseCurrent.x = event.clientX - rect.left;
+            mouseCurrent.y = event.clientY - rect.top;
+        });
+    </script>
+</body>
+</html>
