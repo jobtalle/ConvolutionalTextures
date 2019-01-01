@@ -10,7 +10,6 @@
     <script>
         const gridSize = 32;
         const brushRadius = 180;
-        const brushSpacing = 6;
         const canvas = document.getElementById("renderer");
         const rect = canvas.getBoundingClientRect();
         const mousePrevious = new Myr.Vector(0, 0);
@@ -149,14 +148,13 @@
                 application.clear();
                 myr.blendDisable();
 
-                for (let d = 0; d < dl; d += brushSpacing)
-                    myr.primitives.fillCircleGradient(
-                        brushColorCenter,
-                        brushColorRim,
-                        mousePrevious.x + (dx / dl) * d,
-                        mousePrevious.y + (dy / dl) * d,
-                        brushRadius
-                    );
+                myr.primitives.fillCircleGradient(
+                    brushColorCenter,
+                    brushColorRim,
+                    mousePrevious.x,
+                    mousePrevious.y,
+                    brushRadius
+                );
 
                 myr.blendEnable();
                 

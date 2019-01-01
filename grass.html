@@ -10,15 +10,14 @@
     <script>
         const gridSize = 32;
         const brushRadius = 150;
-        const brushSpacing = 6;
-        const grassHeight = 70;
-        const grassClearance = 10;
-        const grassSpacing = 15;
+        const grassHeight = 100;
+        const grassClearance = 5;
+        const grassSpacing = 24;
         const grassLayers = [];
-        const bladeWidth = 16;
-        const bladeSpacing = 6;
+        const bladeWidth = 20;
+        const bladeSpacing = 4;
         const bladeColor = new Myr.Color(0.36, 0.68, 0.33);
-        const bladeBaseColor = new Myr.Color(0.36 * 0.2, 0.68 * 0.2, 0.33 * 0.2);
+        const bladeBaseColor = new Myr.Color(0.36 * 0.4, 0.68 * 0.4, 0.33 * 0.4);
         const canvas = document.getElementById("renderer");
         const rect = canvas.getBoundingClientRect();
         const mousePrevious = new Myr.Vector(0, 0);
@@ -33,20 +32,20 @@
                     "lowp vec4 pixel = texture(source, uv);" +
                     "color = clamp(vec4(" +
                         "pixel.rg + (pixel.ba - vec2(0.5)) * 0.1," +
-                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.1) * 0.96), 0.0, 1.0);" +
+                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.15) * 0.93), 0.0, 1.0);" +
                 "}",
                 ["source"],
                 []
             ),
             myr.getWidth(),
             myr.getHeight(),
-            2);
+            1);
 
         const applicationShader = new myr.Shader(
             "void main() {" +
                 "lowp vec4 sourcePixel = texture(source, uv) * colorFilter;" +
                 "lowp vec4 targetPixel = texture(target, uv);" +
-                "color = vec4(targetPixel.rg + (sourcePixel.rg - vec2(0.5)) * sourcePixel.a, targetPixel.ba);" +
+                "color = vec4(targetPixel.rg, targetPixel.ba + (sourcePixel.rg - vec2(0.5)) * sourcePixel.a);" +
             "}",
             ["target", "source"],
             []
@@ -57,8 +56,8 @@
                 "lowp vec2 delta = texture(displacement, vec2(uv.x, base)).xy;" +
                 "lowp vec2 uvOffset = (1.0 - uv.y) * (delta - vec2(0.5));" +
                 "lowp float lighting = 1.0 - uvOffset.y;" +
-                "uvOffset.y += length(uvOffset) * 0.5;" +
-                "color = texture(source, uv - uvOffset * pixelSize * 128.0) * lighting;" +
+                "uvOffset.y += length(uvOffset) * 2.0 * (1.0 - uv.y);" +
+                "color = texture(source, uv - uvOffset * pixelSize * 180.0) * lighting;" +
             "}",
             ["source", "displacement"],
             ["base"]
@@ -158,7 +157,7 @@
                         mouseCurrent.x + 30,
                         mouseCurrent.y,
                         mouseCurrent.x,
-                        mouseCurrent.y - 100
+                        mouseCurrent.y - 200
                     );
 
                 layer.draw();
@@ -186,12 +185,11 @@
                 application.clear();
                 myr.blendDisable();
                 myr.setAlpha(Math.min(1, dl / 80));
-
-                for (let d = 0; d < dl; d += brushSpacing)
-                    applyPush.draw(
-                        mousePrevious.x + (dx / dl) * d - brushRadius,
-                        mousePrevious.y + (dy / dl) * d - brushRadius,
-                    );
+                
+                applyPush.draw(
+                    mousePrevious.x - brushRadius,
+                    mousePrevious.y - brushRadius,
+                );
 
                 myr.setAlpha(1);
                 myr.blendEnable();
