@@ -47,8 +47,8 @@
                 "lowp float dy = get(0, 1) - get(0, -1);" +
                 "lowp vec2 displacement = vec2(dx, dy);" +
                 "lowp vec2 focus = vec2(-0.1, 0.1);" +
-                "lowp float shiny = displacement.y - displacement.x;" +
-                "color = texture(source, uv + displacement * 0.08) * (1.0 + shiny);" +
+                "lowp float shiny = max(0.0, displacement.y - displacement.x);" +
+                "color = texture(source, uv + displacement * 0.1) * (1.0 + shiny);" +
             "}",
             ["source", "displacement"],
             []

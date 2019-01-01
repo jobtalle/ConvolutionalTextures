@@ -4,6 +4,7 @@
     <title>Grass</title>
     <script src="myr.js"></script>
     <script src="convTex.js"></script>
+    <script src="cubicNoise.js"></script>
 </head>
 <body>
     <canvas id="renderer" width=1200 height=800></canvas>
@@ -32,7 +33,7 @@
                     "lowp vec4 pixel = texture(source, uv);" +
                     "color = clamp(vec4(" +
                         "pixel.rg + (pixel.ba - vec2(0.5)) * 0.1," +
-                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.1) * 0.97), 0.0, 1.0);" +
+                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.1) * 0.93), 0.0, 1.0);" +
                 "}",
                 ["source"],
                 []
@@ -63,6 +64,8 @@
             ["base"]
         );
 
+        const noiseConfig = cubicNoiseConfig(Math.round(Math.random() * (1 << 32)), 64);
+
         const GrassLayer = function(height, base) {
             const _surface = new myr.Surface(myr.getWidth(), height + grassClearance);
             const _uvy = base / myr.getHeight() + Math.random() * 0.05;
@@ -70,15 +73,18 @@
             const fill = () => {
                 _surface.bind();
                 
-                for (let x = -Math.floor(Math.random() * bladeWidth); x < _surface.getWidth(); x += bladeWidth + Math.floor(Math.random() * bladeSpacing))
+                for (let x = -Math.floor(Math.random() * bladeWidth); x < _surface.getWidth(); x += bladeWidth + Math.floor(Math.random() * bladeSpacing)) {
+                    const h = 0.4 + cubicNoiseSample(noiseConfig, x, base) * 0.6;
+
                     myr.primitives.drawTriangleGradient(
                         bladeBaseColor,
                         x, height + grassClearance,
                         bladeBaseColor,
                         x + bladeWidth, height + grassClearance,
                         bladeColor,
-                        x + bladeWidth * 0.5, grassClearance + Math.floor(Math.random() * height * 0.3)
+                        x + bladeWidth * 0.5, grassClearance + height * (1 - h)
                     );
+                }
             };
             
             this.draw = () => {
