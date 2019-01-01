@@ -8,20 +8,22 @@
 <body>
     <canvas id="renderer" width=1200 height=800></canvas>
     <script>
-        const gridSize = 32;
-        const brushRadius = 2;
+        const gridSize = 48;
+        const gridColorBack = new Myr.Color(0.82, 0.75, 0.46);
+        const gridColorFront = new Myr.Color(0.63, 0.6, 0.45);
+        const brushRadius = 16;
+        const brushSpacing = brushRadius * 0.25;
         const canvas = document.getElementById("renderer");
         const rect = canvas.getBoundingClientRect();
         const mousePrevious = new Myr.Vector(0, 0);
         const mouseCurrent = new Myr.Vector(0, 0);
         const myr = new Myr(canvas);
         const image = new myr.Surface(myr.getWidth(), myr.getHeight());
-        const application = new myr.Surface(myr.getWidth(), myr.getHeight());
         const texture = new ConvTex(
             myr,
             new myr.Shader(
                 "void main() {" +
-                    "lowp float damping = 0.999;" +
+                    "lowp float damping = 0.997;" +
                     "lowp vec4 pixel = texture(source, uv);" +
                     "lowp vec4 pixelLeft = texture(source, vec2(uv.x - pixelSize.x, uv.y));" +
                     "lowp vec4 pixelUp = texture(source, vec2(uv.x, uv.y - pixelSize.y));" +
@@ -34,31 +36,25 @@
             ),
             myr.getWidth(),
             myr.getHeight(),
-            2);
+            1);
         
         const displacementShader = new myr.Shader(
+            "lowp float get(int x, int y) {" +
+                "return texture(displacement, uv + vec2(x, y) * pixelSize).r;" +
+            "}" +
             "void main() {" +
-                "lowp float height = min(texture(displacement, uv).r, 1.0);" +
-                "color = vec4(texture(displacement, uv).r, texture(displacement, uv).g, 1.0, 1.0);" +
+                "lowp float dx = get(1, 0) - get(-1, 0);" +
+                "lowp float dy = get(0, 1) - get(0, -1);" +
+                "lowp vec2 displacement = vec2(dx, dy);" +
+                "lowp vec2 focus = vec2(-0.1, 0.1);" +
+                "lowp float shiny = displacement.y - displacement.x;" +
+                "color = texture(source, uv + displacement * 0.08) * (1.0 + shiny);" +
             "}",
             ["source", "displacement"],
             []
         );
 
-        const applicationShader = new myr.Shader(
-            "void main() {" +
-                "lowp vec4 sourcePixel = texture(source, uv);" +
-                "lowp vec4 targetPixel = texture(target, uv);" +
-                "color = vec4(targetPixel.r + sourcePixel.r * sourcePixel.a, targetPixel.gba);" +
-            "}",
-            ["target", "source"],
-            []
-        );
-
         let brushDown = false;
-        let brushed = false;
-
-        applicationShader.setSurface("source", application);
 
         // Initialize convtex
         displacementShader.setSurface("source", image);
@@ -73,13 +69,19 @@
         for (let y = 0; y < image.getHeight(); y += gridSize << 1) {
             for (let x = 0; x < image.getWidth(); x += gridSize << 1) {
                 myr.primitives.fillRectangle(
-                    new Myr.Color(0.7, 0.7, 1, 1),
+                    gridColorBack,
+                    x, y,
+                    gridSize * 2, gridSize * 2
+                );
+
+                myr.primitives.fillRectangle(
+                    gridColorFront,
                     x, y,
                     gridSize, gridSize
                 );
 
                 myr.primitives.fillRectangle(
-                    new Myr.Color(0.7, 0.7, 1, 1),
+                    gridColorFront,
                     x + gridSize, y + gridSize,
                     gridSize, gridSize
                 );
@@ -89,13 +91,6 @@
         myr.setClearColor(Myr.Color.WHITE);
 
         myr.utils.loop(function(timeStep) {
-            if (brushed) {
-                texture.apply(applicationShader);
-
-                application.bind();
-                application.clear();
-            }
-
             brushed = false;
             
             texture.update();
@@ -106,7 +101,9 @@
             displacementShader.setSurface("displacement", texture.getFront());
             displacementShader.draw(0, 0);
 
-            //texture.getFront().drawScaled(0, 0, 0.2, 0.2);
+            myr.setAlpha(0.5);
+            texture.getFront().drawScaled(0, 0, 0.2, 0.2);
+            myr.setAlpha(1);
 
             myr.primitives.drawCircle(
                 Myr.Color.BLUE,
@@ -124,16 +121,14 @@
             mouseCurrent.x = event.clientX - rect.left;
             mouseCurrent.y = event.clientY - rect.top;
             brushDown = true;
-            
-            application.bind();
-            application.clear();
-            myr.blendDisable();
 
-            myr.primitives.fillCircle(new Myr.Color(1, 0, 0, 1), mouseCurrent.x, mouseCurrent.y, brushRadius);
-
-            myr.blendEnable();
-
-            brushed = true;
+            texture.getFront().bind();
+            myr.primitives.fillCircleGradient(
+                new Myr.Color(1, 0, 0, 1),
+                new Myr.Color(0, 0, 0, 0),
+                mouseCurrent.x, mouseCurrent.y,
+                brushRadius
+            );
         });
 
         canvas.addEventListener("mouseup", () => {
@@ -145,6 +140,26 @@
             mousePrevious.y = mouseCurrent.y;
             mouseCurrent.x = event.clientX - rect.left;
             mouseCurrent.y = event.clientY - rect.top;
+
+            if (brushDown) {
+                const dx = mouseCurrent.x - mousePrevious.x;
+                const dy = mouseCurrent.y - mousePrevious.y;
+                const dl = Math.sqrt(dx * dx + dy * dy);
+
+                texture.getFront().bind();
+                myr.setAlpha(brushSpacing / brushRadius);
+                
+                for (let d = 0; d < dl; d += brushSpacing)
+                    myr.primitives.fillCircleGradient(
+                        new Myr.Color(1, 0, 0, 1),
+                        new Myr.Color(0, 0, 0, 0),
+                        mousePrevious.x + dx * (d / dl),
+                        mousePrevious.y + dy * (d / dl),
+                        brushRadius
+                    );
+
+                myr.setAlpha(1);
+            }
         });
     </script>
 </body>

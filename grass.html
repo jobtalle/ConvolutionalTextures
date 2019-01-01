@@ -32,7 +32,7 @@
                     "lowp vec4 pixel = texture(source, uv);" +
                     "color = clamp(vec4(" +
                         "pixel.rg + (pixel.ba - vec2(0.5)) * 0.1," +
-                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.15) * 0.95), 0.0, 1.0);" +
+                        "vec2(0.5) + (pixel.ba - vec2(0.5) - (pixel.rg - vec2(0.5)) * 0.1) * 0.97), 0.0, 1.0);" +
                 "}",
                 ["source"],
                 []
