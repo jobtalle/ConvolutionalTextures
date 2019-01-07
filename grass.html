@@ -55,7 +55,7 @@
         const grassShader = new myr.Shader(
             "void main() {" +
                 "lowp vec2 delta = texture(displacement, vec2(uv.x, base)).xy;" +
-                "lowp vec2 uvOffset = (1.0 - uv.y) * (delta - vec2(0.5));" +
+                "lowp vec2 uvOffset = pow(1.0 - uv.y, 2.0) * (delta - vec2(0.5));" +
                 "lowp float lighting = 1.0 - uvOffset.y * 2.0;" +
                 "uvOffset.y += length(uvOffset) * 3.0 * (1.0 - uv.y);" +
                 "color = texture(source, uv - uvOffset * pixelSize * 180.0) * lighting;" +
