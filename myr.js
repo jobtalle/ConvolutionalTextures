@@ -536,22 +536,8 @@ const Myr = function(canvasElement) {
     };
 
     this.primitives.drawLine = (color, x1, y1, x2, y2) => {
-        if (x1 > x2) {
-            const x = x1;
-
-            x1 = x2;
-            x2 = x;
-        }
-
-        if (y1 > y2) {
-            const y = y1;
-
-            y1 = y2;
-            y2 = y;
-        }
-
         pushVertexColor(RENDER_MODE_LINES, color, x1, y1);
-        pushVertexColor(RENDER_MODE_LINES, color, x2 + 1, y2 + 1);
+        pushVertexColor(RENDER_MODE_LINES, color, x2, y2);
     };
 
     this.primitives.drawLineGradient = (color1, x1, y1, color2, x2, y2) => {
