@@ -11,7 +11,7 @@
         const gridSize = 48;
         const gridColorBack = new Myr.Color(0.82, 0.75, 0.46);
         const gridColorFront = new Myr.Color(0.63, 0.6, 0.45);
-        const brushRadius = 16;
+        const brushRadius = 24;
         const brushSpacing = brushRadius * 0.25;
         const canvas = document.getElementById("renderer");
         const rect = canvas.getBoundingClientRect();
@@ -23,7 +23,7 @@
             myr,
             new myr.Shader(
                 "void main() {" +
-                    "lowp float damping = 0.997;" +
+                    "lowp float damping = 0.998;" +
                     "lowp vec4 pixel = texture(source, uv);" +
                     "lowp vec4 pixelLeft = texture(source, vec2(uv.x - pixelSize.x, uv.y));" +
                     "lowp vec4 pixelUp = texture(source, vec2(uv.x, uv.y - pixelSize.y));" +
@@ -93,7 +93,8 @@
         myr.utils.loop(function(timeStep) {
             brushed = false;
             
-            texture.update();
+            for (i = 0; i < 2; ++i)
+                texture.update();
 
             myr.bind();
             myr.clear();

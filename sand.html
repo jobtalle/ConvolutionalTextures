@@ -16,6 +16,7 @@
         const hueStep = 0.211;
         const brushRadius = 16;
         const brushSpacing = 6;
+        const scale = 2;
         const texture = new ConvTex(
             myr,
             new myr.Shader(
@@ -48,8 +49,8 @@
                 ["source"],
                 []
             ),
-            myr.getWidth(),
-            myr.getHeight());
+            myr.getWidth() / scale,
+            myr.getHeight() / scale);
 
         let brushDown = false;
         let brushColor = null;
@@ -64,7 +65,7 @@
             myr.bind();
             myr.clear();
 
-            texture.getFront().draw(0, 0);
+            texture.getFront().drawScaled(0, 0, scale, scale);
 
             myr.flush();
 
@@ -84,8 +85,8 @@
         canvas.addEventListener("mousemove", event => {
             mousePrevious.x = mouseCurrent.x;
             mousePrevious.y = mouseCurrent.y;
-            mouseCurrent.x = event.clientX - rect.left;
-            mouseCurrent.y = event.clientY - rect.top;
+            mouseCurrent.x = (event.clientX - rect.left) / scale;
+            mouseCurrent.y = (event.clientY - rect.top) / scale;
 
             if (brushDown && !mousePrevious.equals(mouseCurrent)) {
                 const dx = mouseCurrent.x - mousePrevious.x;

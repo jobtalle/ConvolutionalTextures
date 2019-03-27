@@ -13,6 +13,7 @@
         const mousePrevious = new Myr.Vector(0, 0);
         const mouseCurrent = new Myr.Vector(0, 0);
         const myr = new Myr(canvas);
+        const scale = 2;
         const texture = new ConvTex(
             myr,
             new myr.Shader(
@@ -44,8 +45,8 @@
                 ["source"],
                 []
             ),
-            myr.getWidth(),
-            myr.getHeight());
+            myr.getWidth() / scale,
+            myr.getHeight() / scale);
 
         let brushDown = false;
 
@@ -57,7 +58,7 @@
             myr.bind();
             myr.clear();
 
-            texture.getFront().draw(0, 0);
+            texture.getFront().drawScaled(0, 0, scale, scale);
 
             myr.flush();
 
@@ -75,8 +76,8 @@
         canvas.addEventListener("mousemove", event => {
             mousePrevious.x = mouseCurrent.x;
             mousePrevious.y = mouseCurrent.y;
-            mouseCurrent.x = event.clientX - rect.left;
-            mouseCurrent.y = event.clientY - rect.top;
+            mouseCurrent.x = (event.clientX - rect.left) / scale;
+            mouseCurrent.y = (event.clientY - rect.top) / scale;
 
             if (brushDown && !mousePrevious.equals(mouseCurrent)) {
                 texture.getFront().bind();
